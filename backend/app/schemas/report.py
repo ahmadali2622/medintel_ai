@@ -19,5 +19,7 @@ class HealthResult(BaseModel):
     risk_results: Dict[str, int]
     recommendations: List[str]
 
+from typing import Union
+
 class PDFExtractResult(BaseModel):
-    extracted: Dict[str, Optional[float]]
+    extracted: Dict[str, Optional[Union[float, str]]]
