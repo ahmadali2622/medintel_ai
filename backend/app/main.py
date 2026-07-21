@@ -15,3 +15,9 @@ def read_root():
 
 from app.routers import reports
 app.include_router(reports.router)
+
+from app.models.chat import ChatSession, ChatMessage
+from app.routers import chatbot
+
+app.include_router(chatbot.router)
+
