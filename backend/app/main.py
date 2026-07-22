@@ -21,3 +21,8 @@ from app.routers import chatbot
 
 app.include_router(chatbot.router)
 
+from app.models.profile import DoctorProfile, LabProfile
+from app.routers import doctors, admin
+
+app.include_router(doctors.router)
+app.include_router(admin.router)
