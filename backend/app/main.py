@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from app.db.session import engine, Base
 
 # --- Models (must be imported before create_all) ---
@@ -18,6 +19,15 @@ Base.metadata.create_all(bind=engine)
 
 # --- App instance ---
 app = FastAPI()
+
+# --- Add CORS middleware ---
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],  # Allow origin
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all methods
+    allow_headers=["*"],  # Allow all headers
+)
 
 # --- Register routers ---
 app.include_router(auth.router)
