@@ -1,0 +1,17 @@
+from math import radians, sin, cos, sqrt, atan2
+
+
+def haversine_distance(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
+    """
+    Returns distance in kilometers between two lat/lng points.
+    """
+    R = 6371  # Earth's radius in km
+
+    lat1_r, lng1_r, lat2_r, lng2_r = map(radians, [lat1, lng1, lat2, lng2])
+    dlat = lat2_r - lat1_r
+    dlng = lng2_r - lng1_r
+
+    a = sin(dlat / 2) ** 2 + cos(lat1_r) * cos(lat2_r) * sin(dlng / 2) ** 2
+    c = 2 * atan2(sqrt(a), sqrt(1 - a))
+
+    return R * c
