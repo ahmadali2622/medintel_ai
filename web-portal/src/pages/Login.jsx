@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/client";
+import loginBgVideo from "../assets/login-bg.mp4";
 
 export default function Login() {
   const [isRegister, setIsRegister] = useState(false);
@@ -32,32 +33,14 @@ export default function Login() {
   return (
     <div style={styles.page}>
       <div style={styles.leftPanel}>
-        <svg viewBox="0 0 400 500" style={styles.bgSvg} preserveAspectRatio="xMidYMid slice">
-          <defs>
-            <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#0F5C5C" />
-              <stop offset="100%" stopColor="#0A3D3D" />
-            </linearGradient>
-          </defs>
-          <rect width="400" height="500" fill="url(#fade)" />
-          {[80, 160, 240, 320, 400].map((cy, i) => (
-            <circle key={i} cx={60 + i * 70} cy={cy % 500} r="2.5" fill="#3FA9A0" opacity="0.5" />
-          ))}
-          <line x1="60" y1="80" x2="130" y2="160" stroke="#2E8B57" strokeWidth="1" opacity="0.3" />
-          <line x1="130" y1="160" x2="200" y2="240" stroke="#2E8B57" strokeWidth="1" opacity="0.3" />
-          <line x1="200" y1="240" x2="270" y2="320" stroke="#2E8B57" strokeWidth="1" opacity="0.3" />
-          <polyline
-            points="20,420 90,420 110,360 140,460 160,420 230,420 250,300 280,420 380,420"
-            fill="none"
-            stroke="#5FCFC0"
-            strokeWidth="2.5"
-            opacity="0.9"
-          />
-        </svg>
+        <video autoPlay loop muted playsInline style={styles.bgVideo}>
+          <source src={loginBgVideo} type="video/mp4" />
+        </video>
+        <div style={styles.overlay} />
         <div style={styles.leftContent}>
-          <h2 style={styles.leftHeading}>Where patient data<br />meets prediction.</h2>
+          <h2 style={styles.leftHeading}>Bringing AI healthcare<br />to every Pakistani household.</h2>
           <p style={styles.leftSub}>
-            AI-assisted report analysis, verified specialists, and a health record that follows you.
+            Digital health records, AI-powered report analysis, and verified doctors — built for Pakistan.
           </p>
         </div>
       </div>
@@ -117,12 +100,21 @@ const styles = {
     alignItems: "flex-end",
     overflow: "hidden",
   },
-  bgSvg: {
+  bgVideo: {
     position: "absolute",
     top: 0,
     left: 0,
     width: "100%",
     height: "100%",
+    objectFit: "cover",
+  },
+  overlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    background: "linear-gradient(180deg, rgba(15,92,92,0.25) 0%, rgba(10,40,40,0.85) 100%)",
   },
   leftContent: {
     position: "relative",
