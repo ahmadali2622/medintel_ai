@@ -38,7 +38,7 @@ export default function Login() {
         </video>
         <div style={styles.overlay} />
         <div style={styles.leftContent}>
-          <h2 style={styles.leftHeading}>Bringing AI healthcare<br />to every Pakistani household.</h2>
+          <h2 style={styles.leftHeading}>Bringing AI healthcare<br />to every household.</h2>
           <p style={styles.leftSub}>
             Digital health records, AI-powered report analysis, and verified doctors — built for Pakistan.
           </p>
