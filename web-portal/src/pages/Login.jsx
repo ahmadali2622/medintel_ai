@@ -7,7 +7,7 @@ export default function Login() {
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("doctor");
+  const [role, setRole] = useState("patient");
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
@@ -60,6 +60,7 @@ export default function Login() {
             <>
               <label style={styles.label}>Role</label>
               <select style={styles.input} value={role} onChange={(e) => setRole(e.target.value)}>
+                <option value="patient">Patient</option>
                 <option value="doctor">Doctor</option>
                 <option value="lab">Laboratory</option>
                 <option value="admin">Admin</option>

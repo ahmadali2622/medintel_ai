@@ -3,6 +3,9 @@ import Login from "./pages/Login";
 import DoctorDashboard from "./pages/DoctorDashboard";
 import LabDashboard from "./pages/LabDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
+import PatientDashboard from "./pages/PatientDashboard";
+import UploadReport from "./pages/UploadReport";
+import Chatbot from "./pages/Chatbot";
 
 function App() {
   return (
@@ -12,6 +15,9 @@ function App() {
         <Route path="/doctor" element={<DoctorDashboard />} />
         <Route path="/lab" element={<LabDashboard />} />
         <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/patient" element={<PatientDashboard />} />
+        <Route path="/patient/upload" element={<UploadReport />} />
+        <Route path="/patient/chatbot" element={<Chatbot />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>

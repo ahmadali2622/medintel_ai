@@ -18,7 +18,17 @@ scaler = _load("scaler.pkl")
 
 
 def analyze_health(data: dict) -> dict:
+    normal_defaults = {
+        'glucose': 100, 'HbA1c': 5.4, 'bmi': 22.0,
+        'sysBP': 118, 'diaBP': 78, 'chol': 180,
+        'hemo': 14.0, 'creatinine': 0.9, 'alt': 25, 'ast': 25,
+    }
+    for key, default_val in normal_defaults.items():
+        if data.get(key) is None:
+            data[key] = default_val
+
     age = data["age"]
+    # ... rest of the function stays exactly the same
     gender_male = 1 if data["gender"] == "Male" else 0
     glucose = data["glucose"]
     HbA1c = data["HbA1c"]
