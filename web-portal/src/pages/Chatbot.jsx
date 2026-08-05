@@ -2,6 +2,25 @@ import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import api from "../api/client";
 
+function renderFormatted(text) {
+  return text.split("\n").map((line, lineIdx) => {
+    const parts = line.split(/(\*\*.*?\*\*|\*.*?\*)/g);
+    return (
+      <div key={lineIdx}>
+        {parts.map((part, i) => {
+          if (part.startsWith("**") && part.endsWith("**")) {
+            return <strong key={i}>{part.slice(2, -2)}</strong>;
+          }
+          if (part.startsWith("*") && part.endsWith("*")) {
+            return <strong key={i}>{part.slice(1, -1)}</strong>;
+          }
+          return part;
+        })}
+      </div>
+    );
+  });
+}
+
 export default function Chatbot() {
   const [messages, setMessages] = useState([
     { role: "assistant", content: "Hi, I'm your MedIntel health assistant. Ask me anything about your health." },
@@ -48,7 +67,7 @@ export default function Chatbot() {
           {messages.map((msg, i) => (
             <div key={i} style={msg.role === "user" ? styles.userRow : styles.botRow}>
               <div style={msg.role === "user" ? styles.userBubble : styles.botBubble}>
-                {msg.content}
+                {renderFormatted(msg.content)}
               </div>
             </div>
           ))}

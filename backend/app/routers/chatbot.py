@@ -9,5 +9,5 @@ router = APIRouter(prefix="/chatbot", tags=["chatbot"])
 def chat(request: ChatRequest):
     # Note: patient report linking comes in the next refinement —
     # for now this tests the chatbot standalone, no context yet
-    reply = get_chat_response(request.message)
+    reply = get_chat_response(request.message, history=request.history)
     return {"reply": reply}
