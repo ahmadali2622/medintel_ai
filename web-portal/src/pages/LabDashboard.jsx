@@ -40,7 +40,7 @@ export default function LabDashboard() {
 
 const styles = {
   page: { minHeight: "100vh", background: "#F0F5F5", fontFamily: "'IBM Plex Sans', sans-serif" },
-  banner: { position: "relative", height: "140px", overflow: "hidden" },
+  banner: { position: "relative", height: "200px", overflow: "hidden" },
   bgVideo: { position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" },
   overlay: {
     position: "absolute", top: 0, left: 0, width: "100%", height: "100%",
