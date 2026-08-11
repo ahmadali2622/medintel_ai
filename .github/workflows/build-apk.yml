@@ -9,11 +9,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
+
+      - name: Install dependencies
+        run: |
+          cd web-portal
+          npm install
+
+      - name: Sync Capacitor
+        run: |
+          cd web-portal
+          mkdir -p android/app/src/main/assets
+          npx cap sync
 
       - name: Grant execute permission for gradlew
         run: chmod +x web-portal/android/gradlew
