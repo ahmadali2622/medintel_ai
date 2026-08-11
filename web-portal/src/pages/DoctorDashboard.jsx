@@ -57,8 +57,8 @@ export default function DoctorDashboard() {
 
 const styles = {
   page: { minHeight: "100vh", background: "#F0F5F5", fontFamily: "'IBM Plex Sans', sans-serif" },
-  banner: { position: "relative", height: "222px", overflow: "hidden" },
-  bgVideo: { position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" },
+  banner: { position: "relative", height: "220px", overflow: "hidden" },
+  bgVideo: { position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" , objectPosition: "center 96%"},
   overlay: {
     position: "absolute", top: 0, left: 0, width: "100%", height: "100%",
     background: "linear-gradient(180deg, rgba(15,92,92,0.55) 0%, rgba(10,40,40,0.75) 100%)",
