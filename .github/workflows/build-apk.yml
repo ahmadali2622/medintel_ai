@@ -24,6 +24,7 @@ jobs:
         run: |
           cd web-portal
           npm install
+          chmod +x node_modules/.bin/*
 
       - name: Sync Capacitor
         run: |
