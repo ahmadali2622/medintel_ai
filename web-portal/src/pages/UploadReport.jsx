@@ -83,98 +83,136 @@ export default function UploadReport() {
   ];
 
   return (
-    <div style={styles.page}>
-      <header style={styles.header}>
-        <h1 style={styles.logo}>MedIntel AI</h1>
-        <Link to="/patient" style={styles.backLink}>Back to dashboard</Link>
-      </header>
+    <>
+      <style>{`
+        .upload-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px 16px;
+          margin-bottom: 20px;
+        }
+        .upload-main {
+          max-width: 700px;
+          margin: 40px auto;
+          padding: 0 24px;
+        }
+        .chart-row {
+          display: flex;
+          gap: 16px;
+          align-items: flex-end;
+          height: 110px;
+          padding: 0 4px;
+        }
+        @media (max-width: 600px) {
+          .upload-grid {
+            grid-template-columns: 1fr;
+          }
+          .upload-main {
+            padding: 0 16px !important;
+            margin: 20px auto !important;
+          }
+          .chart-row {
+            flex-wrap: wrap;
+            height: auto;
+          }
+          .chart-bar-wrap {
+            flex: 1 1 30%;
+          }
+        }
+      `}</style>
+      <div style={styles.page}>
+        <header style={styles.header}>
+          <h1 style={styles.logo}>MedIntel AI</h1>
+          <Link to="/patient" style={styles.backLink}>Back to dashboard</Link>
+        </header>
 
-      <main style={styles.main}>
-        <h2 style={styles.heading}>Upload lab report</h2>
-        <p style={styles.subheading}>Upload a PDF to auto-fill, or enter values manually. Only age is required — missing values use healthy defaults.</p>
+        <main className="upload-main">
+          <h2 style={styles.heading}>Upload lab report</h2>
+          <p style={styles.subheading}>Upload a PDF to auto-fill, or enter values manually. Only age is required — missing values use healthy defaults.</p>
 
-        <div style={styles.card}>
-          <label style={styles.uploadLabel}>
-            Upload PDF report
-            <input type="file" accept="application/pdf" onChange={handlePdfUpload} style={styles.fileInput} />
-          </label>
+          <div style={styles.card}>
+            <label style={styles.uploadLabel}>
+              Upload PDF report
+              <input type="file" accept="application/pdf" onChange={handlePdfUpload} style={styles.fileInput} />
+            </label>
 
-          {error && <p style={styles.error}>{error}</p>}
+            {error && <p style={styles.error}>{error}</p>}
 
-          <form onSubmit={handleAnalyze}>
-            <div style={styles.grid}>
-              {fields.map((f) => (
-                <div key={f.key}>
-                  <label style={styles.label}>
-                    {f.label} {f.key !== "age" && <span style={styles.optional}>(optional)</span>}
-                  </label>
-                  <input
+            <form onSubmit={handleAnalyze}>
+              <div className="upload-grid">
+                {fields.map((f) => (
+                  <div key={f.key}>
+                    <label style={styles.label}>
+                      {f.label} {f.key !== "age" && <span style={styles.optional}>(optional)</span>}
+                    </label>
+                    <input
+                      style={styles.input}
+                      type="text"
+                      value={form[f.key]}
+                      onChange={(e) => handleChange(f.key, e.target.value)}
+                      required={f.key === "age"}
+                      placeholder="leave blank if unknown"
+                    />
+                  </div>
+                ))}
+                <div>
+                  <label style={styles.label}>Gender</label>
+                  <select
                     style={styles.input}
-                    type="text"
-                    value={form[f.key]}
-                    onChange={(e) => handleChange(f.key, e.target.value)}
-                    required={f.key === "age"}
-                    placeholder="leave blank if unknown"
-                  />
+                    value={form.gender}
+                    onChange={(e) => handleChange("gender", e.target.value)}
+                  >
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                  </select>
                 </div>
-              ))}
-              <div>
-                <label style={styles.label}>Gender</label>
-                <select
-                  style={styles.input}
-                  value={form.gender}
-                  onChange={(e) => handleChange("gender", e.target.value)}
-                >
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                </select>
               </div>
-            </div>
 
-            <button type="submit" style={styles.button} disabled={loading}>
-              {loading ? "Analyzing..." : "Analyze report"}
-            </button>
-          </form>
-        </div>
-
-        {result && (
-          <div style={{ ...styles.card, marginTop: "20px" }}>
-            <h3 style={styles.sectionTitle}>Risk results</h3>
-            <div style={styles.badgeRow}>
-              {Object.entries(result.risk_results).map(([key, val]) => (
-                <span
-                  key={key}
-                  style={val === 1 ? styles.badgeDanger : styles.badgeSuccess}
-                >
-                  {key.replace("_", " ")}: {val === 1 ? "at risk" : "healthy"}
-                </span>
-              ))}
-            </div>
-
-            <h3 style={{ ...styles.sectionTitle, marginTop: "20px" }}>Risk comparison</h3>
-            <div style={styles.chartRow}>
-              {Object.entries(result.risk_results).map(([key, val]) => (
-                <div key={key} style={styles.chartBarWrap}>
-                  <div style={{
-                    ...styles.chartBar,
-                    height: val === 1 ? "80px" : "24px",
-                    background: val === 1 ? "#E74C3C" : "#2ECC71",
-                  }} />
-                  <p style={styles.chartLabel}>{key.replace("_", " ")}</p>
-                </div>
-              ))}
-            </div>
-
-            <h3 style={{ ...styles.sectionTitle, marginTop: "20px" }}>Recommendations</h3>
-            <ul style={styles.list}>
-              {result.recommendations.map((rec, i) => (
-                <li key={i} style={styles.listItem}>{rec}</li>
-              ))}
-            </ul>
+              <button type="submit" style={styles.button} disabled={loading}>
+                {loading ? "Analyzing..." : "Analyze report"}
+              </button>
+            </form>
           </div>
-        )}
-      </main>
-    </div>
+
+          {result && (
+            <div style={{ ...styles.card, marginTop: "20px" }}>
+              <h3 style={styles.sectionTitle}>Risk results</h3>
+              <div style={styles.badgeRow}>
+                {Object.entries(result.risk_results).map(([key, val]) => (
+                  <span
+                    key={key}
+                    style={val === 1 ? styles.badgeDanger : styles.badgeSuccess}
+                  >
+                    {key.replace("_", " ")}: {val === 1 ? "at risk" : "healthy"}
+                  </span>
+                ))}
+              </div>
+
+              <h3 style={{ ...styles.sectionTitle, marginTop: "20px" }}>Risk comparison</h3>
+              <div className="chart-row">
+                {Object.entries(result.risk_results).map(([key, val]) => (
+                  <div key={key} className="chart-bar-wrap" style={styles.chartBarWrap}>
+                    <div style={{
+                      ...styles.chartBar,
+                      height: val === 1 ? "80px" : "24px",
+                      background: val === 1 ? "#E74C3C" : "#2ECC71",
+                    }} />
+                    <p style={styles.chartLabel}>{key.replace("_", " ")}</p>
+                  </div>
+                ))}
+              </div>
+
+              <h3 style={{ ...styles.sectionTitle, marginTop: "20px" }}>Recommendations</h3>
+              <ul style={styles.list}>
+                {result.recommendations.map((rec, i) => (
+                  <li key={i} style={styles.listItem}>{rec}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </main>
+      </div>
+    </>
   );
 }
 
@@ -186,7 +224,6 @@ const styles = {
   },
   logo: { fontFamily: "'Fraunces', serif", fontSize: "20px", color: "#0F5C5C", margin: 0 },
   backLink: { color: "#0F5C5C", fontSize: "13px", textDecoration: "none" },
-  main: { maxWidth: "700px", margin: "40px auto", padding: "0 24px" },
   heading: { fontFamily: "'Fraunces', serif", fontSize: "24px", color: "#0F5C5C", margin: "0 0 4px" },
   subheading: { color: "#6B8080", fontSize: "13px", margin: "0 0 24px" },
   card: { background: "#fff", border: "1px solid #D5E3E3", borderRadius: "10px", padding: "24px" },
@@ -196,7 +233,6 @@ const styles = {
     borderRadius: "8px", textAlign: "center", cursor: "pointer", background: "#F7FBFB",
   },
   fileInput: { display: "block", marginTop: "8px", fontSize: "12px" },
-  grid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 16px", marginBottom: "20px" },
   label: { fontSize: "12px", color: "#3D5555", display: "block", marginBottom: "4px" },
   optional: { color: "#8FA3A3", fontWeight: 400, fontSize: "11px" },
   input: {
@@ -219,7 +255,6 @@ const styles = {
     background: "#E8F5E9", color: "#2E8B57", fontSize: "12px",
     padding: "4px 10px", borderRadius: "6px", textTransform: "capitalize",
   },
-  chartRow: { display: "flex", gap: "16px", alignItems: "flex-end", height: "110px", padding: "0 4px" },
   chartBarWrap: { display: "flex", flexDirection: "column", alignItems: "center", gap: "6px", flex: 1 },
   chartBar: { width: "100%", borderRadius: "4px 4px 0 0", transition: "height 0.3s" },
   chartLabel: { fontSize: "10px", color: "#6B8080", textAlign: "center", margin: 0, textTransform: "capitalize" },

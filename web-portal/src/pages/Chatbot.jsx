@@ -38,12 +38,16 @@ export default function Chatbot() {
     if (!input.trim()) return;
 
     const userMsg = { role: "user", content: input };
-    setMessages((prev) => [...prev, userMsg]);
+    const updatedMessages = [...messages, userMsg];
+    setMessages(updatedMessages);
     setInput("");
     setLoading(true);
 
     try {
-      const res = await api.post("/chatbot/message", { message: userMsg.content });
+      const res = await api.post("/chatbot/message", {
+        message: userMsg.content,
+        history: updatedMessages,
+      });
       setMessages((prev) => [...prev, { role: "assistant", content: res.data.reply }]);
     } catch (err) {
       setMessages((prev) => [...prev, { role: "assistant", content: "Sorry, something went wrong." }]);
@@ -53,43 +57,61 @@ export default function Chatbot() {
   };
 
   return (
-    <div style={styles.page}>
-      <header style={styles.header}>
-        <h1 style={styles.logo}>MedIntel AI</h1>
-        <Link to="/patient" style={styles.backLink}>Back to dashboard</Link>
-      </header>
+    <>
+      <style>{`
+        .chatbot-main {
+          max-width: 600px;
+          margin: 40px auto;
+          padding: 0 24px;
+        }
+        @media (max-width: 600px) {
+          .chatbot-main {
+            padding: 0 12px !important;
+            margin: 16px auto !important;
+          }
+          .chat-window {
+            height: 60vh !important;
+          }
+        }
+      `}</style>
+      <div style={styles.page}>
+        <header style={styles.header}>
+          <h1 style={styles.logo}>MedIntel AI</h1>
+          <Link to="/patient" style={styles.backLink}>Back to dashboard</Link>
+        </header>
 
-      <main style={styles.main}>
-        <h2 style={styles.heading}>Health chatbot</h2>
-        <p style={styles.subheading}>Not a substitute for professional medical advice</p>
+        <main className="chatbot-main">
+          <h2 style={styles.heading}>Health chatbot</h2>
+          <p style={styles.subheading}>Not a substitute for professional medical advice</p>
 
-        <div style={styles.chatWindow}>
-          {messages.map((msg, i) => (
-            <div key={i} style={msg.role === "user" ? styles.userRow : styles.botRow}>
-              <div style={msg.role === "user" ? styles.userBubble : styles.botBubble}>
-                {renderFormatted(msg.content)}
+          <div style={styles.chatWindow} className="chat-window">
+            {messages.map((msg, i) => (
+              <div key={i} style={msg.role === "user" ? styles.userRow : styles.botRow}>
+                <div style={msg.role === "user" ? styles.userBubble : styles.botBubble}>
+                  {renderFormatted(msg.content)}
+                </div>
               </div>
-            </div>
-          ))}
-          {loading && (
-            <div style={styles.botRow}>
-              <div style={styles.botBubble}>Thinking...</div>
-            </div>
-          )}
-          <div ref={bottomRef} />
-        </div>
+            ))}
+            {loading && (
+              <div style={styles.botRow}>
+                <div style={styles.botBubble}>Thinking...</div>
+              </div>
+            )}
+            <div ref={bottomRef} />
+          </div>
 
-        <form onSubmit={sendMessage} style={styles.inputRow}>
-          <input
-            style={styles.input}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask a health question..."
-          />
-          <button type="submit" style={styles.sendBtn} disabled={loading}>Send</button>
-        </form>
-      </main>
-    </div>
+          <form onSubmit={sendMessage} style={styles.inputRow}>
+            <input
+              style={styles.input}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Ask a health question..."
+            />
+            <button type="submit" style={styles.sendBtn} disabled={loading}>Send</button>
+          </form>
+        </main>
+      </div>
+    </>
   );
 }
 
@@ -101,7 +123,6 @@ const styles = {
   },
   logo: { fontFamily: "'Fraunces', serif", fontSize: "20px", color: "#0F5C5C", margin: 0 },
   backLink: { color: "#0F5C5C", fontSize: "13px", textDecoration: "none" },
-  main: { maxWidth: "600px", margin: "40px auto", padding: "0 24px" },
   heading: { fontFamily: "'Fraunces', serif", fontSize: "24px", color: "#0F5C5C", margin: "0 0 4px" },
   subheading: { color: "#6B8080", fontSize: "13px", margin: "0 0 24px" },
   chatWindow: {

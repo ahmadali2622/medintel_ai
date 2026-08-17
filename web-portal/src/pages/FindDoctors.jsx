@@ -57,51 +57,66 @@ export default function FindDoctors() {
   };
 
   return (
-    <div style={styles.page}>
-      <header style={styles.header}>
-        <h1 style={styles.logo}>MedIntel AI</h1>
-        <Link to="/patient" style={styles.backLink}>Back to dashboard</Link>
-      </header>
+    <>
+      <style>{`
+        .find-main {
+          max-width: 700px;
+          margin: 40px auto;
+          padding: 0 24px;
+        }
+        @media (max-width: 600px) {
+          .find-main {
+            padding: 0 16px !important;
+            margin: 20px auto !important;
+          }
+        }
+      `}</style>
+      <div style={styles.page}>
+        <header style={styles.header}>
+          <h1 style={styles.logo}>MedIntel AI</h1>
+          <Link to="/patient" style={styles.backLink}>Back to dashboard</Link>
+        </header>
 
-      <main style={styles.main}>
-        <h2 style={styles.heading}>Find doctors & labs</h2>
-        <p style={styles.subheading}>Verified providers, sorted by distance when location is available</p>
+        <main className="find-main">
+          <h2 style={styles.heading}>Find doctors & labs</h2>
+          <p style={styles.subheading}>Verified providers, sorted by distance when location is available</p>
 
-        {error && <p style={styles.notice}>{error}</p>}
-        {loading && <p style={styles.notice}>Loading...</p>}
+          {error && <p style={styles.notice}>{error}</p>}
+          {loading && <p style={styles.notice}>Loading...</p>}
 
-        {!loading && (
-          <>
-            <div style={styles.card}>
-              <h3 style={styles.sectionTitle}>Doctors</h3>
-              {doctors.length === 0 && <p style={styles.emptyText}>No verified doctors found nearby</p>}
-              {doctors.map((doc) => (
-                <div key={doc.id} style={styles.row}>
-                  <div>
-                    <p style={styles.rowName}>{doc.name}</p>
-                    <p style={styles.rowMeta}>{doc.specialization}</p>
+          {!loading && (
+            <>
+              <div style={styles.card}>
+                <h3 style={styles.sectionTitle}>Doctors</h3>
+                {doctors.length === 0 && <p style={styles.emptyText}>No verified doctors found nearby</p>}
+                {doctors.map((doc) => (
+                  <div key={doc.id} style={styles.row}>
+                    <div>
+                      <p style={styles.rowName}>{doc.name}</p>
+                      <p style={styles.rowMeta}>{doc.specialization}</p>
+                    </div>
+                    <span style={styles.verifiedBadge}>Verified</span>
                   </div>
-                  <span style={styles.verifiedBadge}>Verified</span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
 
-            <div style={{ ...styles.card, marginTop: "20px" }}>
-              <h3 style={styles.sectionTitle}>Laboratories</h3>
-              {labs.length === 0 && <p style={styles.emptyText}>No verified labs found nearby</p>}
-              {labs.map((lab) => (
-                <div key={lab.id} style={styles.row}>
-                  <div>
-                    <p style={styles.rowName}>{lab.lab_name}</p>
+              <div style={{ ...styles.card, marginTop: "20px" }}>
+                <h3 style={styles.sectionTitle}>Laboratories</h3>
+                {labs.length === 0 && <p style={styles.emptyText}>No verified labs found nearby</p>}
+                {labs.map((lab) => (
+                  <div key={lab.id} style={styles.row}>
+                    <div>
+                      <p style={styles.rowName}>{lab.lab_name}</p>
+                    </div>
+                    <span style={styles.verifiedBadge}>Verified</span>
                   </div>
-                  <span style={styles.verifiedBadge}>Verified</span>
-                </div>
-              ))}
-            </div>
-          </>
-        )}
-      </main>
-    </div>
+                ))}
+              </div>
+            </>
+          )}
+        </main>
+      </div>
+    </>
   );
 }
 
@@ -113,7 +128,6 @@ const styles = {
   },
   logo: { fontFamily: "'Fraunces', serif", fontSize: "20px", color: "#0F5C5C", margin: 0 },
   backLink: { color: "#0F5C5C", fontSize: "13px", textDecoration: "none" },
-  main: { maxWidth: "700px", margin: "40px auto", padding: "0 24px" },
   heading: { fontFamily: "'Fraunces', serif", fontSize: "24px", color: "#0F5C5C", margin: "0 0 4px" },
   subheading: { color: "#6B8080", fontSize: "13px", margin: "0 0 16px" },
   notice: { color: "#8A6D3B", fontSize: "13px", marginBottom: "16px" },
