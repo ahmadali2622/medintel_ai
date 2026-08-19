@@ -65,6 +65,13 @@ export default function PatientDashboard() {
                 <p style={styles.cardDesc}>Verified, sorted by distance</p>
               </div>
             </Link>
+
+            <Link to="/patient/appointments" style={styles.cardLink}>
+              <div style={styles.card}>
+                <p style={styles.cardTitle}>Appointments & reminders</p>
+                <p style={styles.cardDesc}>View bookings and upcoming reminders</p>
+              </div>
+            </Link>
           </div>
         </main>
       </div>

@@ -56,6 +56,17 @@ export default function FindDoctors() {
     }
   };
 
+  const bookAppointment = async (doctorId) => {
+    const scheduledAt = prompt("Enter date and time (YYYY-MM-DDTHH:MM), e.g. 2026-08-20T10:00");
+    if (!scheduledAt) return;
+    try {
+      await api.post("/appointments/book", { doctor_id: doctorId, scheduled_at: scheduledAt });
+      alert("Appointment booked! Check the Appointments page.");
+    } catch (err) {
+      alert("Could not book appointment.");
+    }
+  };
+
   return (
     <>
       <style>{`
@@ -95,7 +106,10 @@ export default function FindDoctors() {
                       <p style={styles.rowName}>{doc.name}</p>
                       <p style={styles.rowMeta}>{doc.specialization}</p>
                     </div>
-                    <span style={styles.verifiedBadge}>Verified</span>
+                    <div style={styles.rowActions}>
+                      <span style={styles.verifiedBadge}>Verified</span>
+                      <button style={styles.bookBtn} onClick={() => bookAppointment(doc.id)}>Book</button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -140,8 +154,13 @@ const styles = {
   },
   rowName: { fontSize: "14px", color: "#3D5555", margin: 0, fontWeight: 500 },
   rowMeta: { fontSize: "12px", color: "#8FA3A3", margin: 0 },
+  rowActions: { display: "flex", alignItems: "center", gap: "8px" },
   verifiedBadge: {
     background: "#E8F5E9", color: "#2E8B57", fontSize: "11px",
     padding: "3px 10px", borderRadius: "6px", fontWeight: 600,
+  },
+  bookBtn: {
+    padding: "4px 12px", background: "#0F5C5C", color: "#fff",
+    border: "1px solid #0F5C5C", borderRadius: "6px", cursor: "pointer", fontSize: "11px",
   },
 };
