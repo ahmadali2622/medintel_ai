@@ -6,6 +6,8 @@ from app.db.session import engine, Base
 from app.models.user import User
 from app.models.chat import ChatSession, ChatMessage
 from app.models.profile import DoctorProfile, LabProfile
+from app.models.appointment import Appointment, Reminder    
+from app.routers import appointments
 
 # --- Routers ---
 from app.routers import auth
@@ -35,6 +37,7 @@ app.include_router(reports.router)
 app.include_router(chatbot.router)
 app.include_router(doctors.router)
 app.include_router(admin.router)
+app.include_router(appointments.router)
 
 
 @app.get("/")
