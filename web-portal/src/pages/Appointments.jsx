@@ -7,6 +7,9 @@ export default function Appointments() {
   const [reminders, setReminders] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ type: "medicine", message: "", remind_at: "" });
+  const [saving, setSaving] = useState(false);
 
   const loadData = () => {
     Promise.all([
@@ -28,6 +31,21 @@ export default function Appointments() {
   const cancelAppointment = async (id) => {
     await api.post(`/appointments/${id}/cancel`);
     loadData();
+  };
+
+  const handleCreateReminder = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await api.post("/reminders/create", form);
+      setForm({ type: "medicine", message: "", remind_at: "" });
+      setShowForm(false);
+      loadData();
+    } catch (err) {
+      alert("Could not create reminder. Check all fields are filled.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const formatDate = (iso) => {
@@ -91,8 +109,57 @@ export default function Appointments() {
               </div>
 
               <div style={{ ...styles.card, marginTop: "20px" }}>
-                <h3 style={styles.sectionTitle}>Reminders</h3>
-                {reminders.length === 0 && <p style={styles.emptyText}>No reminders set</p>}
+                <div style={styles.sectionHeader}>
+                  <h3 style={styles.sectionTitle}>Reminders</h3>
+                  <button style={styles.addBtn} onClick={() => setShowForm(!showForm)}>
+                    {showForm ? "Cancel" : "+ Add reminder"}
+                  </button>
+                </div>
+
+                {showForm && (
+                  <form onSubmit={handleCreateReminder} style={styles.form}>
+                    <div style={styles.formGrid}>
+                      <div>
+                        <label style={styles.label}>Type</label>
+                        <select
+                          style={styles.input}
+                          value={form.type}
+                          onChange={(e) => setForm({ ...form, type: e.target.value })}
+                        >
+                          <option value="medicine">Medicine</option>
+                          <option value="follow_up">Follow-up test</option>
+                          <option value="appointment">Appointment</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={styles.label}>Remind at</label>
+                        <input
+                          style={styles.input}
+                          type="datetime-local"
+                          value={form.remind_at}
+                          onChange={(e) => setForm({ ...form, remind_at: e.target.value })}
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div style={{ marginTop: "12px" }}>
+                      <label style={styles.label}>Message</label>
+                      <input
+                        style={styles.input}
+                        type="text"
+                        placeholder="e.g. Take blood pressure medication"
+                        value={form.message}
+                        onChange={(e) => setForm({ ...form, message: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <button type="submit" style={styles.saveBtn} disabled={saving}>
+                      {saving ? "Saving..." : "Save reminder"}
+                    </button>
+                  </form>
+                )}
+
+                {reminders.length === 0 && !showForm && <p style={styles.emptyText}>No reminders set</p>}
                 {reminders.map((rem) => (
                   <div key={rem.id} style={styles.row}>
                     <div>
@@ -122,7 +189,8 @@ const styles = {
   subheading: { color: "#6B8080", fontSize: "13px", margin: "0 0 16px" },
   notice: { color: "#8A6D3B", fontSize: "13px", marginBottom: "16px" },
   card: { background: "#fff", border: "1px solid #D5E3E3", borderRadius: "10px", padding: "24px" },
-  sectionTitle: { fontSize: "14px", color: "#0F5C5C", margin: "0 0 12px", fontWeight: 600 },
+  sectionHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" },
+  sectionTitle: { fontSize: "14px", color: "#0F5C5C", margin: 0, fontWeight: 600 },
   emptyText: { fontSize: "13px", color: "#8FA3A3" },
   row: {
     display: "flex", justifyContent: "space-between", alignItems: "center",
@@ -137,5 +205,23 @@ const styles = {
   cancelBtn: {
     padding: "4px 10px", background: "transparent", color: "#C0392B",
     border: "1px solid #C0392B", borderRadius: "6px", cursor: "pointer", fontSize: "11px",
+  },
+  addBtn: {
+    padding: "6px 14px", background: "#0F5C5C", color: "#fff",
+    border: "1px solid #0F5C5C", borderRadius: "6px", cursor: "pointer", fontSize: "12px",
+  },
+  form: {
+    background: "#F7FBFB", border: "1px solid #D5E3E3", borderRadius: "8px",
+    padding: "16px", marginBottom: "16px",
+  },
+  formGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" },
+  label: { fontSize: "12px", color: "#3D5555", display: "block", marginBottom: "4px" },
+  input: {
+    width: "100%", padding: "8px 10px", border: "1px solid #D5E3E3", borderRadius: "6px",
+    fontSize: "13px", boxSizing: "border-box", background: "#fff",
+  },
+  saveBtn: {
+    marginTop: "12px", padding: "8px 20px", background: "#0F5C5C", color: "#fff",
+    border: "1px solid #0F5C5C", borderRadius: "6px", cursor: "pointer", fontSize: "13px",
   },
 };

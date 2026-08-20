@@ -1,11 +1,13 @@
 from typing import Optional
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.profile import DoctorProfile, LabProfile
-from app.schemas.profile import DoctorProfileCreate, DoctorProfileOut, LabProfileCreate, LabProfileOut
-from app.core.deps import get_current_user
+from app.models.appointment import Appointment
 from app.models.user import User
+from app.schemas.profile import DoctorProfileCreate, DoctorProfileOut, LabProfileCreate, LabProfileOut
+from app.schemas.appointment import AppointmentOut
+from app.core.deps import get_current_user
 from app.services.maps_service import haversine_distance
 
 router = APIRouter(tags=["doctors-labs"])
@@ -16,7 +18,6 @@ def register_doctor(data: DoctorProfileCreate, db: Session = Depends(get_db), us
     existing = db.query(DoctorProfile).filter(DoctorProfile.user_id == user.id).first()
     if existing:
         return existing
-
     profile = DoctorProfile(user_id=user.id, **data.dict())
     db.add(profile)
     db.commit()
@@ -29,7 +30,6 @@ def register_lab(data: LabProfileCreate, db: Session = Depends(get_db), user: Us
     existing = db.query(LabProfile).filter(LabProfile.user_id == user.id).first()
     if existing:
         return existing
-
     profile = LabProfile(user_id=user.id, **data.dict())
     db.add(profile)
     db.commit()
@@ -45,17 +45,14 @@ def nearby_doctors(
     db: Session = Depends(get_db)
 ):
     doctors = db.query(DoctorProfile).filter(DoctorProfile.verified == True).all()
-
     if lat is None or lng is None:
         return doctors
-
     results = []
     for doc in doctors:
         if doc.lat is not None and doc.lng is not None:
             dist = haversine_distance(lat, lng, doc.lat, doc.lng)
             if dist <= radius_km:
                 results.append((dist, doc))
-
     results.sort(key=lambda x: x[0])
     return [doc for _, doc in results]
 
@@ -68,16 +65,57 @@ def nearby_labs(
     db: Session = Depends(get_db)
 ):
     labs = db.query(LabProfile).filter(LabProfile.verified == True).all()
-
     if lat is None or lng is None:
         return labs
-
     results = []
     for lab in labs:
         if lab.lat is not None and lab.lng is not None:
             dist = haversine_distance(lat, lng, lab.lat, lab.lng)
             if dist <= radius_km:
                 results.append((dist, lab))
-
     results.sort(key=lambda x: x[0])
     return [lab for _, lab in results]
+
+
+@router.get("/doctors/my-profile", response_model=DoctorProfileOut)
+def my_doctor_profile(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    profile = db.query(DoctorProfile).filter(DoctorProfile.user_id == user.id).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Doctor profile not found. Please register your profile first.")
+    return profile
+
+
+@router.get("/doctors/my-appointments")
+def my_doctor_appointments(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    profile = db.query(DoctorProfile).filter(DoctorProfile.user_id == user.id).first()
+    if not profile:
+        return []
+
+    appointments = db.query(Appointment).filter(Appointment.doctor_id == profile.id).order_by(Appointment.scheduled_at).all()
+
+    result = []
+    for appt in appointments:
+        patient = db.query(User).filter(User.id == appt.patient_id).first()
+        result.append({
+            "id": appt.id,
+            "patient_email": patient.email if patient else "Unknown",
+            "status": appt.status,
+            "scheduled_at": appt.scheduled_at,
+            "notes": appt.notes,
+        })
+    return result
+
+
+@router.post("/doctors/appointments/{appointment_id}/confirm")
+def confirm_appointment(appointment_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    profile = db.query(DoctorProfile).filter(DoctorProfile.user_id == user.id).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Doctor profile not found")
+
+    appt = db.query(Appointment).filter(Appointment.id == appointment_id, Appointment.doctor_id == profile.id).first()
+    if not appt:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+
+    appt.status = "confirmed"
+    db.commit()
+    return {"message": "Appointment confirmed", "appointment_id": appointment_id}
