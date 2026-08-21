@@ -6,7 +6,8 @@ from app.db.session import engine, Base
 from app.models.user import User
 from app.models.chat import ChatSession, ChatMessage
 from app.models.profile import DoctorProfile, LabProfile
-from app.models.appointment import Appointment, Reminder    
+from app.models.appointment import Appointment, Reminder
+from app.models.report import Report    
 from app.routers import appointments
 
 # --- Routers ---
