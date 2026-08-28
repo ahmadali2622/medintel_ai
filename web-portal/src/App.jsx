@@ -8,6 +8,7 @@ import UploadReport from "./pages/UploadReport";
 import Chatbot from "./pages/Chatbot";
 import FindDoctors from "./pages/FindDoctors";
 import Appointments from "./pages/Appointments";
+import MyReports from "./pages/MyReports";
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
         <Route path="/patient/chatbot" element={<Chatbot />} />
         <Route path="/patient/doctors" element={<FindDoctors />} />
         <Route path="/patient/appointments" element={<Appointments />} />
+        <Route path="/patient/reports" element={<MyReports />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>

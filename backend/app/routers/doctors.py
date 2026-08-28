@@ -6,7 +6,6 @@ from app.models.profile import DoctorProfile, LabProfile
 from app.models.appointment import Appointment
 from app.models.user import User
 from app.schemas.profile import DoctorProfileCreate, DoctorProfileOut, LabProfileCreate, LabProfileOut
-from app.schemas.appointment import AppointmentOut
 from app.core.deps import get_current_user
 from app.services.maps_service import haversine_distance
 
@@ -90,9 +89,7 @@ def my_doctor_appointments(db: Session = Depends(get_db), user: User = Depends(g
     profile = db.query(DoctorProfile).filter(DoctorProfile.user_id == user.id).first()
     if not profile:
         return []
-
     appointments = db.query(Appointment).filter(Appointment.doctor_id == profile.id).order_by(Appointment.scheduled_at).all()
-
     result = []
     for appt in appointments:
         patient = db.query(User).filter(User.id == appt.patient_id).first()
@@ -111,11 +108,17 @@ def confirm_appointment(appointment_id: int, db: Session = Depends(get_db), user
     profile = db.query(DoctorProfile).filter(DoctorProfile.user_id == user.id).first()
     if not profile:
         raise HTTPException(status_code=404, detail="Doctor profile not found")
-
     appt = db.query(Appointment).filter(Appointment.id == appointment_id, Appointment.doctor_id == profile.id).first()
     if not appt:
         raise HTTPException(status_code=404, detail="Appointment not found")
-
     appt.status = "confirmed"
     db.commit()
     return {"message": "Appointment confirmed", "appointment_id": appointment_id}
+
+
+@router.get("/labs/my-profile", response_model=LabProfileOut)
+def my_lab_profile(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    profile = db.query(LabProfile).filter(LabProfile.user_id == user.id).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Lab profile not found. Please register your profile first.")
+    return profile

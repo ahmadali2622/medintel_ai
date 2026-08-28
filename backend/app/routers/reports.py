@@ -52,3 +52,4 @@ def lab_submit(data: ReportSaveRequest, db: Session = Depends(get_db), user: Use
 @router.get("/my-reports", response_model=list[ReportOut])
 def my_reports(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     return db.query(Report).filter(Report.patient_id == user.id).order_by(Report.created_at.desc()).all()
+

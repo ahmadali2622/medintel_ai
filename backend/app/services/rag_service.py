@@ -29,15 +29,19 @@ def get_chat_response(user_message: str, history: list | None = None, latest_rep
     history = history or []
 
     system_instructions = (
-        "You are a helpful health assistant for the MedIntel AI platform. "
-        "You are not a doctor - always suggest consulting a real doctor for serious concerns. "
-        "Answer in 2-3 short sentences, or a short numbered/bulleted list if listing items. "
+        "You are a focused medical health assistant for the MedIntel AI platform. "
+        "Only answer questions related to health, medicine, symptoms, conditions, diet, and wellness. "
+        "If asked something unrelated to health, politely redirect to health topics. "
+        "You are not a doctor - always suggest consulting a real doctor for serious concerns.\n"
+        "If the user's question has a typo or unclear term, infer the most likely medical term they meant "
+        "and answer that - do not refuse just because of a typo.\n"
+        "Answer in 2-4 short sentences, or a short numbered/bulleted list if listing items. "
         "Put each list item on its own line using a real line break. "
-        "Use **word** for bold on important terms. Keep it concise - no long paragraphs."
+        "Use **word** for bold on important terms. Be specific and accurate, not vague."
     )
 
     convo = ""
-    for turn in history[-6:]:  # keep last 6 turns to control token usage
+    for turn in history[-6:]:
         role = "Patient" if turn.get("role") == "user" else "Assistant"
         convo += f"{role}: {turn.get('content', '')}\n"
 
@@ -56,7 +60,11 @@ def get_chat_response(user_message: str, history: list | None = None, latest_rep
         )
 
     try:
-        response = llm.invoke(prompt, max_tokens=200)
+        response = llm.invoke(
+            prompt,
+            max_tokens=600,
+            extra_body={"reasoning_effort": "low"}
+        )
         return response.content.strip() if response.content else "Sorry, I couldn't generate a response."
     except Exception as e:
         return f"Error calling Groq API: {str(e)}"

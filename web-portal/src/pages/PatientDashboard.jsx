@@ -72,6 +72,13 @@ export default function PatientDashboard() {
                 <p style={styles.cardDesc}>View bookings and upcoming reminders</p>
               </div>
             </Link>
+
+            <Link to="/patient/reports" style={styles.cardLink}>
+              <div style={styles.card}>
+                <p style={styles.cardTitle}>My reports</p>
+                <p style={styles.cardDesc}>View reports submitted by labs or youself</p>
+              </div>
+            </Link>
           </div>
         </main>
       </div>
