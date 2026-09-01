@@ -6,6 +6,7 @@ class AppointmentCreate(BaseModel):
     doctor_id: int
     scheduled_at: datetime
     notes: Optional[str] = None
+    patient_phone: Optional[str] = None
 
 class AppointmentOut(BaseModel):
     id: int
@@ -14,6 +15,8 @@ class AppointmentOut(BaseModel):
     status: str
     scheduled_at: datetime
     notes: Optional[str]
+    patient_phone: Optional[str]
+    reject_reason: Optional[str]
 
     class Config:
         from_attributes = True

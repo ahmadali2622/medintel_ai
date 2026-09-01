@@ -96,12 +96,13 @@ def my_doctor_appointments(db: Session = Depends(get_db), user: User = Depends(g
         result.append({
             "id": appt.id,
             "patient_email": patient.email if patient else "Unknown",
+            "patient_phone": appt.patient_phone,
             "status": appt.status,
             "scheduled_at": appt.scheduled_at,
             "notes": appt.notes,
+            "reject_reason": appt.reject_reason,
         })
     return result
-
 
 @router.post("/doctors/appointments/{appointment_id}/confirm")
 def confirm_appointment(appointment_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
@@ -114,6 +115,24 @@ def confirm_appointment(appointment_id: int, db: Session = Depends(get_db), user
     appt.status = "confirmed"
     db.commit()
     return {"message": "Appointment confirmed", "appointment_id": appointment_id}
+
+@router.post("/doctors/appointments/{appointment_id}/reject")
+def reject_appointment(
+    appointment_id: int,
+    reason: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user)
+):
+    profile = db.query(DoctorProfile).filter(DoctorProfile.user_id == user.id).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Doctor profile not found")
+    appt = db.query(Appointment).filter(Appointment.id == appointment_id, Appointment.doctor_id == profile.id).first()
+    if not appt:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+    appt.status = "rejected"
+    appt.reject_reason = reason
+    db.commit()
+    return {"message": "Appointment rejected", "appointment_id": appointment_id}
 
 
 @router.get("/labs/my-profile", response_model=LabProfileOut)
