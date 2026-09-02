@@ -3,7 +3,9 @@ from datetime import datetime
 from typing import Optional
 
 class AppointmentCreate(BaseModel):
-    doctor_id: int
+    provider_type: str  # "doctor" or "lab"
+    doctor_id: Optional[int] = None
+    lab_id: Optional[int] = None
     scheduled_at: datetime
     notes: Optional[str] = None
     patient_phone: Optional[str] = None
@@ -11,7 +13,9 @@ class AppointmentCreate(BaseModel):
 class AppointmentOut(BaseModel):
     id: int
     patient_id: int
-    doctor_id: int
+    provider_type: str
+    doctor_id: Optional[int]
+    lab_id: Optional[int]
     status: str
     scheduled_at: datetime
     notes: Optional[str]

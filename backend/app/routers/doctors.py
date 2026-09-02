@@ -1,5 +1,8 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi import UploadFile, File
+import shutil
+import os
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.profile import DoctorProfile, LabProfile
@@ -141,3 +144,46 @@ def my_lab_profile(db: Session = Depends(get_db), user: User = Depends(get_curre
     if not profile:
         raise HTTPException(status_code=404, detail="Lab profile not found. Please register your profile first.")
     return profile
+
+UPLOAD_DIR = "uploads/licenses"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+
+@router.post("/doctors/upload-license")
+async def upload_doctor_license(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user)
+):
+    profile = db.query(DoctorProfile).filter(DoctorProfile.user_id == user.id).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Doctor profile not found")
+
+    filename = f"doctor_{profile.id}_{file.filename}"
+    filepath = os.path.join(UPLOAD_DIR, filename)
+    with open(filepath, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    profile.license_doc_url = filepath
+    db.commit()
+    return {"message": "License uploaded", "file_path": filepath}
+
+
+@router.post("/labs/upload-license")
+async def upload_lab_license(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user)
+):
+    profile = db.query(LabProfile).filter(LabProfile.user_id == user.id).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Lab profile not found")
+
+    filename = f"lab_{profile.id}_{file.filename}"
+    filepath = os.path.join(UPLOAD_DIR, filename)
+    with open(filepath, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    profile.license_doc_url = filepath
+    db.commit()
+    return {"message": "License uploaded", "file_path": filepath}

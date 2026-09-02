@@ -3,11 +3,11 @@ from app.db.session import Base
 
 class DoctorProfile(Base):
     __tablename__ = "doctor_profiles"
-
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), unique=True)
     name = Column(String, nullable=False)
     specialization = Column(String, nullable=False)
+    phone = Column(String, nullable=True)
     license_doc_url = Column(String, nullable=True)
     verified = Column(Boolean, default=False)
     lat = Column(Float, nullable=True)
@@ -16,10 +16,10 @@ class DoctorProfile(Base):
 
 class LabProfile(Base):
     __tablename__ = "lab_profiles"
-
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), unique=True)
     lab_name = Column(String, nullable=False)
+    phone = Column(String, nullable=True)
     license_doc_url = Column(String, nullable=True)
     verified = Column(Boolean, default=False)
     lat = Column(Float, nullable=True)
