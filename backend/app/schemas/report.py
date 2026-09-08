@@ -41,9 +41,11 @@ class ReportOut(BaseModel):
     id: int
     patient_id: int
     uploaded_by_id: int
+    uploaded_by_name: Optional[str] = None
     extracted_values: dict
     risk_results: dict
     recommendations: List[str]
+    created_at: Optional[str] = None
 
     class Config:
         from_attributes = True

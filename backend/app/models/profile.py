@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, Float, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, ForeignKey
 from app.db.session import Base
 
 class DoctorProfile(Base):
@@ -8,8 +8,10 @@ class DoctorProfile(Base):
     name = Column(String, nullable=False)
     specialization = Column(String, nullable=False)
     phone = Column(String, nullable=True)
+    photo_url = Column(String, nullable=True)
     license_doc_url = Column(String, nullable=True)
-    verified = Column(Boolean, default=False)
+    status = Column(String, default="pending")  # pending, verified, rejected, cancelled
+    reject_reason = Column(String, nullable=True)
     lat = Column(Float, nullable=True)
     lng = Column(Float, nullable=True)
 
@@ -21,6 +23,7 @@ class LabProfile(Base):
     lab_name = Column(String, nullable=False)
     phone = Column(String, nullable=True)
     license_doc_url = Column(String, nullable=True)
-    verified = Column(Boolean, default=False)
+    status = Column(String, default="pending")
+    reject_reason = Column(String, nullable=True)
     lat = Column(Float, nullable=True)
     lng = Column(Float, nullable=True)

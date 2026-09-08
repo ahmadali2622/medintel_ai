@@ -16,6 +16,8 @@ class AppointmentOut(BaseModel):
     provider_type: str
     doctor_id: Optional[int]
     lab_id: Optional[int]
+    doctor_name: Optional[str] = None
+    lab_name: Optional[str] = None
     status: str
     scheduled_at: datetime
     notes: Optional[str]
@@ -24,7 +26,6 @@ class AppointmentOut(BaseModel):
 
     class Config:
         from_attributes = True
-
 
 class ReminderCreate(BaseModel):
     type: str

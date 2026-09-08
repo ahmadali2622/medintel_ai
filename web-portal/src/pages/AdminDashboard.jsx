@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/client";
-import adminBg from "../assets/admin-bg.mp4";
 
 export default function AdminDashboard() {
   const [pending, setPending] = useState({ doctors: [], labs: [] });
@@ -9,27 +8,48 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
 
   const loadPending = () => {
-    api.get("/admin/pending-verifications")
-      .then((res) => setPending(res.data))
-      .catch(() => setError("Could not load verification queue"));
+    api.get("/admin/pending-verifications").then((res) => setPending(res.data)).catch(() => setError("Could not load verification queue"));
   };
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (!token) {
-      navigate("/");
-      return;
-    }
+    if (!token) { navigate("/"); return; }
     loadPending();
   }, [navigate]);
 
-  const verifyDoctor = async (id) => {
-    await api.post(`/admin/verify-doctor/${id}`);
+  const viewDocument = async (type, id) => {
+    try {
+      const res = await api.get(`/admin/view-document/${type}/${id}`, { responseType: "blob" });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      window.open(url, "_blank");
+    } catch (err) {
+      alert("Could not open document.");
+    }
+  };
+
+  const verifyDoctor = async (id) => { await api.post(`/admin/verify-doctor/${id}`); loadPending(); };
+  const rejectDoctor = async (id) => {
+    const reason = prompt("Reason for rejecting this doctor:");
+    if (!reason) return;
+    await api.post(`/admin/reject-doctor/${id}?reason=${encodeURIComponent(reason)}`);
+    loadPending();
+  };
+  const cancelDoctor = async (id) => {
+    if (!window.confirm("Cancel this doctor's request?")) return;
+    await api.post(`/admin/cancel-doctor/${id}`);
     loadPending();
   };
 
-  const verifyLab = async (id) => {
-    await api.post(`/admin/verify-lab/${id}`);
+  const verifyLab = async (id) => { await api.post(`/admin/verify-lab/${id}`); loadPending(); };
+  const rejectLab = async (id) => {
+    const reason = prompt("Reason for rejecting this lab:");
+    if (!reason) return;
+    await api.post(`/admin/reject-lab/${id}?reason=${encodeURIComponent(reason)}`);
+    loadPending();
+  };
+  const cancelLab = async (id) => {
+    if (!window.confirm("Cancel this lab's request?")) return;
+    await api.post(`/admin/cancel-lab/${id}`);
     loadPending();
   };
 
@@ -41,16 +61,10 @@ export default function AdminDashboard() {
 
   return (
     <div style={styles.page}>
-      <div style={styles.banner}>
-        <video autoPlay loop muted playsInline style={styles.bgVideo}>
-          <source src={adminBg} type="video/mp4" />
-        </video>
-        <div style={styles.overlay} />
-        <div style={styles.bannerContent}>
-          <h1 style={styles.logo}>MedIntel AI</h1>
-          <button style={styles.logoutBtn} onClick={handleLogout}>Log out</button>
-        </div>
-      </div>
+      <header style={styles.header}>
+        <h1 style={styles.logo}>MedIntel AI</h1>
+        <button style={styles.logoutBtn} onClick={handleLogout}>Log out</button>
+      </header>
 
       <main style={styles.main}>
         <h2 style={styles.heading}>Admin Dashboard</h2>
@@ -65,9 +79,18 @@ export default function AdminDashboard() {
             <div key={doc.id} style={styles.row}>
               <div>
                 <p style={styles.rowName}>{doc.name}</p>
-                <p style={styles.rowMeta}>{doc.specialization}</p>
+                <p style={styles.rowMeta}>{doc.specialization} {doc.phone && `· 📞 ${doc.phone}`}</p>
               </div>
-              <button style={styles.verifyBtn} onClick={() => verifyDoctor(doc.id)}>Verify</button>
+              <div style={styles.actions}>
+                {doc.has_document ? (
+                  <button style={styles.docBtn} onClick={() => viewDocument("doctor", doc.id)}>View Document</button>
+                ) : (
+                  <span style={styles.noDoc}>No document</span>
+                )}
+                <button style={styles.verifyBtn} onClick={() => verifyDoctor(doc.id)}>Verify</button>
+                <button style={styles.rejectBtn} onClick={() => rejectDoctor(doc.id)}>Reject</button>
+                <button style={styles.cancelBtn} onClick={() => cancelDoctor(doc.id)}>Cancel</button>
+              </div>
             </div>
           ))}
         </div>
@@ -79,8 +102,18 @@ export default function AdminDashboard() {
             <div key={lab.id} style={styles.row}>
               <div>
                 <p style={styles.rowName}>{lab.lab_name}</p>
+                {lab.phone && <p style={styles.rowMeta}>📞 {lab.phone}</p>}
               </div>
-              <button style={styles.verifyBtn} onClick={() => verifyLab(lab.id)}>Verify</button>
+              <div style={styles.actions}>
+                {lab.has_document ? (
+                  <button style={styles.docBtn} onClick={() => viewDocument("lab", lab.id)}>View Document</button>
+                ) : (
+                  <span style={styles.noDoc}>No document</span>
+                )}
+                <button style={styles.verifyBtn} onClick={() => verifyLab(lab.id)}>Verify</button>
+                <button style={styles.rejectBtn} onClick={() => rejectLab(lab.id)}>Reject</button>
+                <button style={styles.cancelBtn} onClick={() => cancelLab(lab.id)}>Cancel</button>
+              </div>
             </div>
           ))}
         </div>
@@ -91,36 +124,23 @@ export default function AdminDashboard() {
 
 const styles = {
   page: { minHeight: "100vh", background: "#F0F5F5", fontFamily: "'IBM Plex Sans', sans-serif" },
-  banner: { position: "relative", height: "200px", overflow: "hidden" },
-  bgVideo: { position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 70%" },
-  overlay: {
-    position: "absolute", top: 0, left: 0, width: "100%", height: "100%",
-    background: "linear-gradient(180deg, rgba(15,92,92,0.55) 0%, rgba(10,40,40,0.75) 100%)",
-  },
-  bannerContent: {
-    position: "relative", height: "100%", display: "flex", justifyContent: "space-between",
-    alignItems: "center", padding: "0 32px",
-  },
-  logo: { fontFamily: "'Fraunces', serif", fontSize: "22px", color: "#fff", margin: 0 },
-  logoutBtn: {
-    padding: "8px 16px", background: "rgba(255,255,255,0.1)", color: "#fff",
-    border: "1px solid rgba(255,255,255,0.5)", borderRadius: "6px", cursor: "pointer", fontSize: "13px",
-  },
+  header: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 32px", background: "#FFFFFF", borderBottom: "1px solid #D5E3E3" },
+  logo: { fontFamily: "'Fraunces', serif", fontSize: "20px", color: "#0F5C5C", margin: 0 },
+  logoutBtn: { padding: "8px 16px", background: "transparent", color: "#0F5C5C", border: "1px solid #0F5C5C", borderRadius: "6px", cursor: "pointer", fontSize: "13px" },
   main: { maxWidth: "800px", margin: "40px auto", padding: "0 24px" },
   heading: { fontFamily: "'Fraunces', serif", fontSize: "24px", color: "#0F5C5C", margin: "0 0 4px" },
   subheading: { color: "#6B8080", fontSize: "13px", margin: "0 0 24px" },
   card: { background: "#fff", border: "1px solid #D5E3E3", borderRadius: "10px", padding: "24px" },
   sectionTitle: { fontSize: "14px", color: "#0F5C5C", margin: "0 0 12px", fontWeight: 600 },
   emptyText: { fontSize: "13px", color: "#8FA3A3" },
-  row: {
-    display: "flex", justifyContent: "space-between", alignItems: "center",
-    padding: "10px 0", borderBottom: "1px solid #EFF5F5",
-  },
+  row: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #EFF5F5", gap: "12px", flexWrap: "wrap" },
   rowName: { fontSize: "14px", color: "#3D5555", margin: 0, fontWeight: 500 },
   rowMeta: { fontSize: "12px", color: "#8FA3A3", margin: 0 },
-  verifyBtn: {
-    padding: "6px 14px", background: "#0F5C5C", color: "#fff", border: "1px solid #0F5C5C",
-    borderRadius: "6px", cursor: "pointer", fontSize: "12px",
-  },
+  actions: { display: "flex", gap: "6px", flexWrap: "wrap" },
+  docBtn: { padding: "6px 12px", background: "transparent", color: "#0F5C5C", border: "1px solid #0F5C5C", borderRadius: "6px", cursor: "pointer", fontSize: "11px" },
+  noDoc: { fontSize: "11px", color: "#C0392B", alignSelf: "center" },
+  verifyBtn: { padding: "6px 14px", background: "#0F5C5C", color: "#fff", border: "1px solid #0F5C5C", borderRadius: "6px", cursor: "pointer", fontSize: "12px" },
+  rejectBtn: { padding: "6px 14px", background: "transparent", color: "#C0392B", border: "1px solid #C0392B", borderRadius: "6px", cursor: "pointer", fontSize: "12px" },
+  cancelBtn: { padding: "6px 14px", background: "transparent", color: "#8FA3A3", border: "1px solid #D5E3E3", borderRadius: "6px", cursor: "pointer", fontSize: "12px" },
   error: { color: "#C0392B", fontSize: "13px", marginBottom: "16px" },
 };

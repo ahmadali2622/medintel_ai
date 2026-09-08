@@ -9,6 +9,7 @@ from app.models.profile import DoctorProfile, LabProfile
 from app.models.appointment import Appointment, Reminder
 from app.models.report import Report    
 from app.routers import appointments
+from app.models.review import Review
 
 # --- Routers ---
 from app.routers import auth

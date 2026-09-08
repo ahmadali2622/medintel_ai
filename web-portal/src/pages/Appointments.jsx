@@ -33,6 +33,32 @@ export default function Appointments() {
     loadData();
   };
 
+  const deleteAppointment = async (id) => {
+    if (!window.confirm("Delete this appointment permanently?")) return;
+    await api.delete(`/appointments/${id}`);
+    loadData();
+  };
+
+  const deleteReminder = async (id) => {
+    if (!window.confirm("Delete this reminder permanently?")) return;
+    await api.delete(`/reminders/${id}`);
+    loadData();
+  };
+
+  // --- ADDED FUNCTION START ---
+  const leaveReview = async (doctorId) => {
+    const rating = prompt("Rate this doctor 1-5:");
+    if (!rating || rating < 1 || rating > 5) return;
+    const comment = prompt("Any comments? (optional)") || "";
+    try {
+      await api.post(`/doctors/${doctorId}/reviews`, { doctor_id: doctorId, rating: parseInt(rating), comment });
+      alert("Thanks for your feedback!");
+    } catch (err) {
+      alert("Could not submit review.");
+    }
+  };
+  // --- ADDED FUNCTION END ---
+
   const handleCreateReminder = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -55,23 +81,21 @@ export default function Appointments() {
 
   const statusStyle = (status) => {
     if (status === "confirmed") return styles.badgeSuccess;
-    if (status === "cancelled") return styles.badgeDanger;
+    if (status === "cancelled" || status === "rejected") return styles.badgeDanger;
     return styles.badgePending;
+  };
+
+  const providerLabel = (appt) => {
+    if (appt.provider_type === "lab") return appt.lab_name || "Laboratory visit";
+    return appt.doctor_name || "Doctor appointment";
   };
 
   return (
     <>
       <style>{`
-        .appt-main {
-          max-width: 700px;
-          margin: 40px auto;
-          padding: 0 24px;
-        }
+        .appt-main { max-width: 700px; margin: 40px auto; padding: 0 24px; }
         @media (max-width: 600px) {
-          .appt-main {
-            padding: 0 16px !important;
-            margin: 20px auto !important;
-          }
+          .appt-main { padding: 0 16px !important; margin: 20px auto !important; }
         }
       `}</style>
       <div style={styles.page}>
@@ -93,16 +117,30 @@ export default function Appointments() {
                 <h3 style={styles.sectionTitle}>Appointments</h3>
                 {appointments.length === 0 && <p style={styles.emptyText}>No appointments booked yet</p>}
                 {appointments.map((appt) => (
-                  <div key={appt.id} style={styles.row}>
-                    <div>
-                      <p style={styles.rowName}>{formatDate(appt.scheduled_at)}</p>
-                      <p style={styles.rowMeta}>{appt.notes || "No notes"}</p>
-                    </div>
-                    <div style={styles.rowActions}>
+                  <div key={appt.id} style={styles.apptBlock}>
+                    <div style={styles.row}>
+                      <div>
+                        <p style={styles.rowName}>{providerLabel(appt)}</p>
+                        <p style={styles.rowMeta}>{formatDate(appt.scheduled_at)}</p>
+                        <p style={styles.rowMeta}>{appt.notes || "No notes"}</p>
+                        {appt.status === "rejected" && appt.reject_reason && (
+                          <p style={styles.rejectReason}>Rejected: {appt.reject_reason}</p>
+                        )}
+                      </div>
                       <span style={statusStyle(appt.status)}>{appt.status}</span>
-                      {appt.status !== "cancelled" && (
+                    </div>
+                    <div style={styles.actionRow}>
+                      {appt.status !== "cancelled" && appt.status !== "rejected" && (
                         <button style={styles.cancelBtn} onClick={() => cancelAppointment(appt.id)}>Cancel</button>
                       )}
+                      
+                      {/* --- ADDED REVIEW BUTTON START --- */}
+                      {appt.status === "completed" && appt.provider_type === "doctor" && (
+                        <button style={styles.reviewBtn} onClick={() => leaveReview(appt.doctor_id)}>Leave a review</button>
+                      )}
+                      {/* --- ADDED REVIEW BUTTON END --- */}
+
+                      <button style={styles.deleteBtn} onClick={() => deleteAppointment(appt.id)}>Delete</button>
                     </div>
                   </div>
                 ))}
@@ -166,6 +204,7 @@ export default function Appointments() {
                       <p style={styles.rowName}>{rem.message}</p>
                       <p style={styles.rowMeta}>{formatDate(rem.remind_at)} · {rem.type.replace("_", " ")}</p>
                     </div>
+                    <button style={styles.deleteBtn} onClick={() => deleteReminder(rem.id)}>Delete</button>
                   </div>
                 ))}
               </div>
@@ -179,10 +218,7 @@ export default function Appointments() {
 
 const styles = {
   page: { minHeight: "100vh", background: "#F0F5F5", fontFamily: "'IBM Plex Sans', sans-serif" },
-  header: {
-    display: "flex", justifyContent: "space-between", alignItems: "center",
-    padding: "16px 32px", background: "#FFFFFF", borderBottom: "1px solid #D5E3E3",
-  },
+  header: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 32px", background: "#FFFFFF", borderBottom: "1px solid #D5E3E3" },
   logo: { fontFamily: "'Fraunces', serif", fontSize: "20px", color: "#0F5C5C", margin: 0 },
   backLink: { color: "#0F5C5C", fontSize: "13px", textDecoration: "none" },
   heading: { fontFamily: "'Fraunces', serif", fontSize: "24px", color: "#0F5C5C", margin: "0 0 4px" },
@@ -192,36 +228,24 @@ const styles = {
   sectionHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" },
   sectionTitle: { fontSize: "14px", color: "#0F5C5C", margin: 0, fontWeight: 600 },
   emptyText: { fontSize: "13px", color: "#8FA3A3" },
-  row: {
-    display: "flex", justifyContent: "space-between", alignItems: "center",
-    padding: "10px 0", borderBottom: "1px solid #EFF5F5", gap: "12px",
-  },
+  apptBlock: { padding: "12px 0", borderBottom: "1px solid #EFF5F5" },
+  row: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" },
   rowName: { fontSize: "14px", color: "#3D5555", margin: 0, fontWeight: 500 },
-  rowMeta: { fontSize: "12px", color: "#8FA3A3", margin: 0 },
-  rowActions: { display: "flex", alignItems: "center", gap: "8px" },
+  rowMeta: { fontSize: "12px", color: "#8FA3A3", margin: "2px 0 0" },
+  rejectReason: { fontSize: "12px", color: "#C0392B", margin: "4px 0 0" },
   badgeSuccess: { background: "#E8F5E9", color: "#2E8B57", fontSize: "11px", padding: "3px 10px", borderRadius: "6px", fontWeight: 600, textTransform: "capitalize" },
   badgeDanger: { background: "#FBE9E7", color: "#C0392B", fontSize: "11px", padding: "3px 10px", borderRadius: "6px", fontWeight: 600, textTransform: "capitalize" },
   badgePending: { background: "#FFF3CD", color: "#8A6D3B", fontSize: "11px", padding: "3px 10px", borderRadius: "6px", fontWeight: 600, textTransform: "capitalize" },
-  cancelBtn: {
-    padding: "4px 10px", background: "transparent", color: "#C0392B",
-    border: "1px solid #C0392B", borderRadius: "6px", cursor: "pointer", fontSize: "11px",
-  },
-  addBtn: {
-    padding: "6px 14px", background: "#0F5C5C", color: "#fff",
-    border: "1px solid #0F5C5C", borderRadius: "6px", cursor: "pointer", fontSize: "12px",
-  },
-  form: {
-    background: "#F7FBFB", border: "1px solid #D5E3E3", borderRadius: "8px",
-    padding: "16px", marginBottom: "16px",
-  },
+  actionRow: { display: "flex", gap: "8px", marginTop: "8px" },
+  cancelBtn: { padding: "4px 10px", background: "transparent", color: "#C0392B", border: "1px solid #C0392B", borderRadius: "6px", cursor: "pointer", fontSize: "11px" },
+  deleteBtn: { padding: "4px 10px", background: "transparent", color: "#8FA3A3", border: "1px solid #D5E3E3", borderRadius: "6px", cursor: "pointer", fontSize: "11px" },
+  addBtn: { padding: "6px 14px", background: "#0F5C5C", color: "#fff", border: "1px solid #0F5C5C", borderRadius: "6px", cursor: "pointer", fontSize: "12px" },
+  form: { background: "#F7FBFB", border: "1px solid #D5E3E3", borderRadius: "8px", padding: "16px", marginBottom: "16px" },
   formGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" },
   label: { fontSize: "12px", color: "#3D5555", display: "block", marginBottom: "4px" },
-  input: {
-    width: "100%", padding: "8px 10px", border: "1px solid #D5E3E3", borderRadius: "6px",
-    fontSize: "13px", boxSizing: "border-box", background: "#fff",
-  },
-  saveBtn: {
-    marginTop: "12px", padding: "8px 20px", background: "#0F5C5C", color: "#fff",
-    border: "1px solid #0F5C5C", borderRadius: "6px", cursor: "pointer", fontSize: "13px",
-  },
+  input: { width: "100%", padding: "8px 10px", border: "1px solid #D5E3E3", borderRadius: "6px", fontSize: "13px", boxSizing: "border-box", background: "#fff" },
+  saveBtn: { marginTop: "12px", padding: "8px 20px", background: "#0F5C5C", color: "#fff", border: "1px solid #0F5C5C", borderRadius: "6px", cursor: "pointer", fontSize: "13px" },
+  
+  /* --- Added style for Review Button --- */
+  reviewBtn: { padding: "4px 10px", background: "transparent", color: "#F39C12", border: "1px solid #F39C12", borderRadius: "6px", cursor: "pointer", fontSize: "11px" },
 };

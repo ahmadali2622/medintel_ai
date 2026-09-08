@@ -5,6 +5,7 @@ from app.models.appointment import Appointment, Reminder
 from app.schemas.appointment import AppointmentCreate, AppointmentOut, ReminderCreate, ReminderOut
 from app.core.deps import get_current_user
 from app.models.user import User
+from app.models.profile import DoctorProfile, LabProfile
 
 router = APIRouter(tags=["appointments"])
 
@@ -38,10 +39,37 @@ def book_appointment(data: AppointmentCreate, db: Session = Depends(get_db), use
     return appointment
 
 
+from app.models.profile import DoctorProfile, LabProfile
+
+
 @router.get("/appointments/my", response_model=list[AppointmentOut])
 def my_appointments(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
-    return db.query(Appointment).filter(Appointment.patient_id == user.id).order_by(Appointment.scheduled_at).all()
-
+    appts = db.query(Appointment).filter(Appointment.patient_id == user.id).order_by(Appointment.scheduled_at).all()
+    result = []
+    for a in appts:
+        doctor_name = None
+        lab_name = None
+        if a.doctor_id:
+            doc = db.query(DoctorProfile).filter(DoctorProfile.id == a.doctor_id).first()
+            doctor_name = doc.name if doc else None
+        if a.lab_id:
+            lab = db.query(LabProfile).filter(LabProfile.id == a.lab_id).first()
+            lab_name = lab.lab_name if lab else None
+        result.append({
+            "id": a.id,
+            "patient_id": a.patient_id,
+            "provider_type": a.provider_type,
+            "doctor_id": a.doctor_id,
+            "lab_id": a.lab_id,
+            "doctor_name": doctor_name,
+            "lab_name": lab_name,
+            "status": a.status,
+            "scheduled_at": a.scheduled_at,
+            "notes": a.notes,
+            "patient_phone": a.patient_phone,
+            "reject_reason": a.reject_reason,
+        })
+    return result
 
 @router.post("/appointments/{appointment_id}/cancel", response_model=AppointmentOut)
 def cancel_appointment(appointment_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):

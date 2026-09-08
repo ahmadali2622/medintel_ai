@@ -1,12 +1,26 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../api/client";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import L from "leaflet";
+
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+});
 
 export default function FindDoctors() {
   const [doctors, setDoctors] = useState([]);
   const [labs, setLabs] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [userLocation, setUserLocation] = useState(null);
+  const [bookingFor, setBookingFor] = useState(null);
+  const [form, setForm] = useState({ scheduled_at: "", patient_phone: "", notes: "" });
+  const [submitting, setSubmitting] = useState(false);
+  const [bookError, setBookError] = useState("");
 
   useEffect(() => {
     if (!navigator.geolocation) {
@@ -14,11 +28,8 @@ export default function FindDoctors() {
       loadAll();
       return;
     }
-
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        loadNearby(pos.coords.latitude, pos.coords.longitude);
-      },
+      (pos) => loadNearby(pos.coords.latitude, pos.coords.longitude),
       () => {
         setError("Location permission denied. Showing all verified doctors/labs instead.");
         loadAll();
@@ -27,6 +38,7 @@ export default function FindDoctors() {
   }, []);
 
   const loadNearby = async (lat, lng) => {
+    setUserLocation({ lat, lng });
     try {
       const [docRes, labRes] = await Promise.all([
         api.get(`/doctors/nearby?lat=${lat}&lng=${lng}&radius_km=50`),
@@ -56,30 +68,50 @@ export default function FindDoctors() {
     }
   };
 
-  const bookAppointment = async (doctorId) => {
-    const scheduledAt = prompt("Enter date and time (YYYY-MM-DDTHH:MM), e.g. 2026-08-20T10:00");
-    if (!scheduledAt) return;
+  const openBookingForm = (type, id, name) => {
+    setBookingFor({ type, id, name });
+    setForm({ scheduled_at: "", patient_phone: "", notes: "" });
+    setBookError("");
+  };
+
+  const closeBookingForm = () => {
+    setBookingFor(null);
+  };
+
+  const handleBookSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setBookError("");
     try {
-      await api.post("/appointments/book", { doctor_id: doctorId, scheduled_at: scheduledAt });
+      const payload = {
+        provider_type: bookingFor.type,
+        scheduled_at: form.scheduled_at,
+        patient_phone: form.patient_phone,
+        notes: form.notes,
+      };
+      if (bookingFor.type === "doctor") payload.doctor_id = bookingFor.id;
+      if (bookingFor.type === "lab") payload.lab_id = bookingFor.id;
+
+      await api.post("/appointments/book", payload);
       alert("Appointment booked! Check the Appointments page.");
+      closeBookingForm();
     } catch (err) {
-      alert("Could not book appointment.");
+      if (err.response?.status === 409) {
+        setBookError("That time slot is already booked. Please choose another time.");
+      } else {
+        setBookError("Could not book appointment. Please check your details.");
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
     <>
       <style>{`
-        .find-main {
-          max-width: 700px;
-          margin: 40px auto;
-          padding: 0 24px;
-        }
+        .find-main { max-width: 700px; margin: 40px auto; padding: 0 24px; }
         @media (max-width: 600px) {
-          .find-main {
-            padding: 0 16px !important;
-            margin: 20px auto !important;
-          }
+          .find-main { padding: 0 16px !important; margin: 20px auto !important; }
         }
       `}</style>
       <div style={styles.page}>
@@ -92,6 +124,36 @@ export default function FindDoctors() {
           <h2 style={styles.heading}>Find doctors & labs</h2>
           <p style={styles.subheading}>Verified providers, sorted by distance when location is available</p>
 
+          {!loading && (doctors.length > 0 || labs.length > 0) && (
+            <div style={{ ...styles.card, marginBottom: "20px", padding: 0, overflow: "hidden" }}>
+              <MapContainer
+                center={userLocation ? [userLocation.lat, userLocation.lng] : [31.5204, 74.3587]}
+                zoom={12}
+                style={{ height: "280px", width: "100%" }}
+              >
+                <TileLayer
+                  attribution='&copy; OpenStreetMap contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                {doctors.filter(d => d.lat && d.lng).map((doc) => (
+                  <Marker key={`doc-${doc.id}`} position={[doc.lat, doc.lng]}>
+                    <Popup>
+                      <strong>{doc.name}</strong><br />
+                      {doc.specialization}
+                    </Popup>
+                  </Marker>
+                ))}
+                {labs.filter(l => l.lat && l.lng).map((lab) => (
+                  <Marker key={`lab-${lab.id}`} position={[lab.lat, lab.lng]}>
+                    <Popup>
+                      <strong>{lab.lab_name}</strong>
+                    </Popup>
+                  </Marker>
+                ))}
+              </MapContainer>
+            </div>
+          )}
+
           {error && <p style={styles.notice}>{error}</p>}
           {loading && <p style={styles.notice}>Loading...</p>}
 
@@ -100,18 +162,29 @@ export default function FindDoctors() {
               <div style={styles.card}>
                 <h3 style={styles.sectionTitle}>Doctors</h3>
                 {doctors.length === 0 && <p style={styles.emptyText}>No verified doctors found nearby</p>}
+                
+                {/* --- REPLACED SECTION START --- */}
                 {doctors.map((doc) => (
                   <div key={doc.id} style={styles.row}>
-                    <div>
-                      <p style={styles.rowName}>{doc.name}</p>
-                      <p style={styles.rowMeta}>{doc.specialization}</p>
+                    <div style={styles.rowWithPhoto}>
+                      {doc.photo_url && <img src={`${api.defaults.baseURL}/doctors/${doc.id}/photo`} alt={doc.name} style={styles.photo} />}
+                      <div>
+                        <p style={styles.rowName}>{doc.name}</p>
+                        <p style={styles.rowMeta}>{doc.specialization}</p>
+                        {doc.phone && <p style={styles.rowPhone}>📞 {doc.phone}</p>}
+                        {doc.average_rating && (
+                          <p style={styles.rating}>⭐ {doc.average_rating} ({doc.review_count} reviews)</p>
+                        )}
+                      </div>
                     </div>
                     <div style={styles.rowActions}>
                       <span style={styles.verifiedBadge}>Verified</span>
-                      <button style={styles.bookBtn} onClick={() => bookAppointment(doc.id)}>Book</button>
+                      <button style={styles.bookBtn} onClick={() => openBookingForm("doctor", doc.id, doc.name)}>Book</button>
                     </div>
                   </div>
                 ))}
+                {/* --- REPLACED SECTION END --- */}
+
               </div>
 
               <div style={{ ...styles.card, marginTop: "20px" }}>
@@ -121,12 +194,62 @@ export default function FindDoctors() {
                   <div key={lab.id} style={styles.row}>
                     <div>
                       <p style={styles.rowName}>{lab.lab_name}</p>
+                      {lab.phone && <p style={styles.rowPhone}>📞 {lab.phone}</p>}
                     </div>
-                    <span style={styles.verifiedBadge}>Verified</span>
+                    <div style={styles.rowActions}>
+                      <span style={styles.verifiedBadge}>Verified</span>
+                      <button style={styles.bookBtn} onClick={() => openBookingForm("lab", lab.id, lab.lab_name)}>Book</button>
+                    </div>
                   </div>
                 ))}
               </div>
             </>
+          )}
+
+          {bookingFor && (
+            <div style={styles.modalOverlay} onClick={closeBookingForm}>
+              <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+                <h3 style={styles.sectionTitle}>Book with {bookingFor.name}</h3>
+
+                {bookError && <p style={styles.error}>{bookError}</p>}
+
+                <form onSubmit={handleBookSubmit}>
+                  <label style={styles.label}>Date & time</label>
+                  <input
+                    style={styles.input}
+                    type="datetime-local"
+                    value={form.scheduled_at}
+                    onChange={(e) => setForm({ ...form, scheduled_at: e.target.value })}
+                    required
+                  />
+
+                  <label style={styles.label}>Your contact number</label>
+                  <input
+                    style={styles.input}
+                    type="tel"
+                    placeholder="03001234567"
+                    value={form.patient_phone}
+                    onChange={(e) => setForm({ ...form, patient_phone: e.target.value })}
+                    required
+                  />
+
+                  <label style={styles.label}>Reason for visit <span style={styles.optional}>(optional)</span></label>
+                  <input
+                    style={styles.input}
+                    type="text"
+                    value={form.notes}
+                    onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                  />
+
+                  <div style={styles.modalActions}>
+                    <button type="button" style={styles.cancelModalBtn} onClick={closeBookingForm}>Cancel</button>
+                    <button type="submit" style={styles.confirmBookBtn} disabled={submitting}>
+                      {submitting ? "Booking..." : "Confirm booking"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
           )}
         </main>
       </div>
@@ -150,10 +273,16 @@ const styles = {
   emptyText: { fontSize: "13px", color: "#8FA3A3" },
   row: {
     display: "flex", justifyContent: "space-between", alignItems: "center",
-    padding: "10px 0", borderBottom: "1px solid #EFF5F5",
+    padding: "10px 0", borderBottom: "1px solid #EFF5F5", gap: "12px",
   },
-  rowName: { fontSize: "14px", color: "#3D5555", margin: 0, fontWeight: 500 },
-  rowMeta: { fontSize: "12px", color: "#8FA3A3", margin: 0 },
+  /* --- Added for new doctor layout --- */
+  rowWithPhoto: { display: "flex", alignItems: "center", gap: "12px" },
+  photo: { width: "48px", height: "48px", borderRadius: "50%", objectFit: "cover", backgroundColor: "#E8F5E9" },
+  rating: { fontSize: "12px", color: "#F39C12", margin: "4px 0 0", fontWeight: 500 },
+  /* ----------------------------------- */
+  rowName: { fontSize: "14px", color: "#3D5555", margin: 0, fontWeight: 600 },
+  rowMeta: { fontSize: "12px", color: "#8FA3A3", margin: "2px 0 0" },
+  rowPhone: { fontSize: "12px", color: "#0F5C5C", margin: "2px 0 0" },
   rowActions: { display: "flex", alignItems: "center", gap: "8px" },
   verifiedBadge: {
     background: "#E8F5E9", color: "#2E8B57", fontSize: "11px",
@@ -162,5 +291,30 @@ const styles = {
   bookBtn: {
     padding: "4px 12px", background: "#0F5C5C", color: "#fff",
     border: "1px solid #0F5C5C", borderRadius: "6px", cursor: "pointer", fontSize: "11px",
+  },
+  modalOverlay: {
+    position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
+    background: "rgba(15,92,92,0.4)", display: "flex", alignItems: "center",
+    justifyContent: "center", zIndex: 100, padding: "16px", boxSizing: "border-box",
+  },
+  modal: {
+    background: "#fff", borderRadius: "10px", padding: "24px",
+    width: "100%", maxWidth: "380px", boxSizing: "border-box",
+  },
+  label: { fontSize: "12px", color: "#3D5555", display: "block", margin: "12px 0 4px" },
+  optional: { color: "#8FA3A3", fontWeight: 400 },
+  input: {
+    width: "100%", padding: "8px 10px", border: "1px solid #D5E3E3", borderRadius: "6px",
+    fontSize: "13px", boxSizing: "border-box",
+  },
+  error: { color: "#C0392B", fontSize: "13px", marginBottom: "8px" },
+  modalActions: { display: "flex", gap: "8px", marginTop: "18px" },
+  cancelModalBtn: {
+    flex: 1, padding: "10px", background: "transparent", color: "#6B8080",
+    border: "1px solid #D5E3E3", borderRadius: "6px", cursor: "pointer", fontSize: "13px",
+  },
+  confirmBookBtn: {
+    flex: 1, padding: "10px", background: "#0F5C5C", color: "#fff",
+    border: "1px solid #0F5C5C", borderRadius: "6px", cursor: "pointer", fontSize: "13px",
   },
 };

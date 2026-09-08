@@ -16,6 +16,21 @@ export default function MyReports() {
 
   const formatDate = (iso) => new Date(iso).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" });
 
+  const downloadPdf = async (reportId) => {
+    try {
+      const res = await api.get(`/reports/${reportId}/pdf`, { responseType: "blob" });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `report_${reportId}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      alert("Could not download PDF.");
+    }
+  };
+
   return (
     <>
       <style>{`
@@ -43,7 +58,14 @@ export default function MyReports() {
 
           {!loading && reports.map((r) => (
             <div key={r.id} style={{ ...styles.card, marginBottom: "16px" }}>
-              <p style={styles.rowMeta}>{formatDate(r.created_at || new Date())}</p>
+              <div style={styles.reportHeader}>
+                <div>
+                  <p style={styles.labName}>{r.uploaded_by_name || "Self-submitted"}</p>
+                  <p style={styles.rowMeta}>{r.created_at ? formatDate(r.created_at) : ""}</p>
+                </div>
+                <button style={styles.downloadBtn} onClick={() => downloadPdf(r.id)}>Download PDF</button>
+              </div>
+
               <div style={styles.badgeRow}>
                 {Object.entries(r.risk_results).map(([key, val]) => (
                   <span key={key} style={val === 1 ? styles.badgeDanger : styles.badgeSuccess}>
@@ -72,7 +94,10 @@ const styles = {
   notice: { color: "#8A6D3B", fontSize: "13px", marginBottom: "16px" },
   card: { background: "#fff", border: "1px solid #D5E3E3", borderRadius: "10px", padding: "20px" },
   emptyText: { fontSize: "13px", color: "#8FA3A3" },
-  rowMeta: { fontSize: "12px", color: "#8FA3A3", margin: "0 0 10px" },
+  reportHeader: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" },
+  labName: { fontFamily: "'Fraunces', serif", fontSize: "16px", fontWeight: 700, color: "#0F5C5C", margin: 0 },
+  rowMeta: { fontSize: "12px", color: "#8FA3A3", margin: "2px 0 0" },
+  downloadBtn: { padding: "6px 14px", background: "transparent", color: "#0F5C5C", border: "1px solid #0F5C5C", borderRadius: "6px", cursor: "pointer", fontSize: "12px", whiteSpace: "nowrap" },
   badgeRow: { display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "12px" },
   badgeDanger: { background: "#FBE9E7", color: "#C0392B", fontSize: "12px", padding: "4px 10px", borderRadius: "6px", textTransform: "capitalize" },
   badgeSuccess: { background: "#E8F5E9", color: "#2E8B57", fontSize: "12px", padding: "4px 10px", borderRadius: "6px", textTransform: "capitalize" },
