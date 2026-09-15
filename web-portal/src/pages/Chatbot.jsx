@@ -27,11 +27,48 @@ export default function Chatbot() {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  
+  // --- ADDED STATES START ---
+  const [documentContext, setDocumentContext] = useState(null);
+  const [documentName, setDocumentName] = useState("");
+  const [uploadingDoc, setUploadingDoc] = useState(false);
+  // --- ADDED STATES END ---
+  
   const bottomRef = useRef(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // --- ADDED FUNCTIONS START ---
+  const handleDocumentUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploadingDoc(true);
+    const data = new FormData();
+    data.append("file", file);
+    try {
+      const res = await api.post("/chatbot/upload-document", data, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      if (res.data.document_text) {
+        setDocumentContext(res.data.document_text);
+        setDocumentName(file.name);
+      } else {
+        alert(res.data.message);
+      }
+    } catch (err) {
+      alert("Could not process document.");
+    } finally {
+      setUploadingDoc(false);
+    }
+  };
+
+  const removeDocument = () => {
+    setDocumentContext(null);
+    setDocumentName("");
+  };
+  // --- ADDED FUNCTIONS END ---
 
   const sendMessage = async (e) => {
     e.preventDefault();
@@ -44,10 +81,14 @@ export default function Chatbot() {
     setLoading(true);
 
     try {
+      // --- MODIFIED API CALL START ---
       const res = await api.post("/chatbot/message", {
         message: userMsg.content,
         history: updatedMessages,
+        document_context: documentContext,
       });
+      // --- MODIFIED API CALL END ---
+      
       setMessages((prev) => [...prev, { role: "assistant", content: res.data.reply }]);
     } catch (err) {
       setMessages((prev) => [...prev, { role: "assistant", content: "Sorry, something went wrong." }]);
@@ -100,6 +141,19 @@ export default function Chatbot() {
             <div ref={bottomRef} />
           </div>
 
+          {/* --- ADDED UPLOAD UI START --- */}
+          {documentName && (
+            <div style={styles.docBadge}>
+              📄 {documentName}
+              <button style={styles.removeDocBtn} onClick={removeDocument}>✕</button>
+            </div>
+          )}
+          <label style={styles.uploadLabel}>
+            {uploadingDoc ? "Processing..." : "📎 Attach a document"}
+            <input type="file" accept=".pdf" onChange={handleDocumentUpload} style={styles.fileInput} disabled={uploadingDoc} />
+          </label>
+          {/* --- ADDED UPLOAD UI END --- */}
+
           <form onSubmit={sendMessage} style={styles.inputRow}>
             <input
               style={styles.input}
@@ -148,4 +202,11 @@ const styles = {
     padding: "10px 20px", background: "#0F5C5C", color: "#fff", border: "1px solid #0F5C5C",
     borderRadius: "6px", fontSize: "13px", cursor: "pointer",
   },
+  
+  // --- ADDED UPLOAD STYLES START ---
+  docBadge: { display: "flex", alignItems: "center", gap: "8px", background: "#F0F5F5", color: "#0F5C5C", fontSize: "12px", padding: "6px 12px", borderRadius: "6px", marginBottom: "8px", width: "fit-content" },
+  removeDocBtn: { background: "none", border: "none", color: "#0F5C5C", cursor: "pointer", fontSize: "12px", padding: 0 },
+  uploadLabel: { display: "block", fontSize: "12px", color: "#0F5C5C", cursor: "pointer", marginBottom: "8px" },
+  fileInput: { display: "none" }
+  // --- ADDED UPLOAD STYLES END ---
 };

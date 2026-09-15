@@ -113,8 +113,8 @@ def nearby_doctors(
     radius_km: float = 20,
     db: Session = Depends(get_db)
 ):
-    doctors = db.query(DoctorProfile).filter(DoctorProfile.verified == True).all()
-
+    doctors = db.query(DoctorProfile).filter(DoctorProfile.status == "verified").all()
+    
     def with_rating(doc):
         avg = db.query(sqlfunc.avg(Review.rating)).filter(Review.doctor_id == doc.id).scalar()
         count = db.query(Review).filter(Review.doctor_id == doc.id).count()
@@ -141,7 +141,7 @@ def nearby_labs(
     radius_km: float = 20,
     db: Session = Depends(get_db)
 ):
-    labs = db.query(LabProfile).filter(LabProfile.verified == True).all()
+    labs = db.query(LabProfile).filter(LabProfile.status == "verified").all()
     if lat is None or lng is None:
         return labs
     results = []

@@ -1,22 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../api/client";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import L from "leaflet";
-
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-});
 
 export default function FindDoctors() {
   const [doctors, setDoctors] = useState([]);
   const [labs, setLabs] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
-  const [userLocation, setUserLocation] = useState(null);
   const [bookingFor, setBookingFor] = useState(null);
   const [form, setForm] = useState({ scheduled_at: "", patient_phone: "", notes: "" });
   const [submitting, setSubmitting] = useState(false);
@@ -38,7 +28,6 @@ export default function FindDoctors() {
   }, []);
 
   const loadNearby = async (lat, lng) => {
-    setUserLocation({ lat, lng });
     try {
       const [docRes, labRes] = await Promise.all([
         api.get(`/doctors/nearby?lat=${lat}&lng=${lng}&radius_km=50`),
@@ -74,9 +63,7 @@ export default function FindDoctors() {
     setBookError("");
   };
 
-  const closeBookingForm = () => {
-    setBookingFor(null);
-  };
+  const closeBookingForm = () => setBookingFor(null);
 
   const handleBookSubmit = async (e) => {
     e.preventDefault();
@@ -124,36 +111,6 @@ export default function FindDoctors() {
           <h2 style={styles.heading}>Find doctors & labs</h2>
           <p style={styles.subheading}>Verified providers, sorted by distance when location is available</p>
 
-          {!loading && (doctors.length > 0 || labs.length > 0) && (
-            <div style={{ ...styles.card, marginBottom: "20px", padding: 0, overflow: "hidden" }}>
-              <MapContainer
-                center={userLocation ? [userLocation.lat, userLocation.lng] : [31.5204, 74.3587]}
-                zoom={12}
-                style={{ height: "280px", width: "100%" }}
-              >
-                <TileLayer
-                  attribution='&copy; OpenStreetMap contributors'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-                {doctors.filter(d => d.lat && d.lng).map((doc) => (
-                  <Marker key={`doc-${doc.id}`} position={[doc.lat, doc.lng]}>
-                    <Popup>
-                      <strong>{doc.name}</strong><br />
-                      {doc.specialization}
-                    </Popup>
-                  </Marker>
-                ))}
-                {labs.filter(l => l.lat && l.lng).map((lab) => (
-                  <Marker key={`lab-${lab.id}`} position={[lab.lat, lab.lng]}>
-                    <Popup>
-                      <strong>{lab.lab_name}</strong>
-                    </Popup>
-                  </Marker>
-                ))}
-              </MapContainer>
-            </div>
-          )}
-
           {error && <p style={styles.notice}>{error}</p>}
           {loading && <p style={styles.notice}>Loading...</p>}
 
@@ -162,12 +119,12 @@ export default function FindDoctors() {
               <div style={styles.card}>
                 <h3 style={styles.sectionTitle}>Doctors</h3>
                 {doctors.length === 0 && <p style={styles.emptyText}>No verified doctors found nearby</p>}
-                
-                {/* --- REPLACED SECTION START --- */}
                 {doctors.map((doc) => (
                   <div key={doc.id} style={styles.row}>
                     <div style={styles.rowWithPhoto}>
-                      {doc.photo_url && <img src={`${api.defaults.baseURL}/doctors/${doc.id}/photo`} alt={doc.name} style={styles.photo} />}
+                      {doc.photo_url && (
+                        <img src={`${api.defaults.baseURL}/doctors/${doc.id}/photo`} alt={doc.name} style={styles.photo} />
+                      )}
                       <div>
                         <p style={styles.rowName}>{doc.name}</p>
                         <p style={styles.rowMeta}>{doc.specialization}</p>
@@ -183,8 +140,6 @@ export default function FindDoctors() {
                     </div>
                   </div>
                 ))}
-                {/* --- REPLACED SECTION END --- */}
-
               </div>
 
               <div style={{ ...styles.card, marginTop: "20px" }}>
@@ -275,14 +230,12 @@ const styles = {
     display: "flex", justifyContent: "space-between", alignItems: "center",
     padding: "10px 0", borderBottom: "1px solid #EFF5F5", gap: "12px",
   },
-  /* --- Added for new doctor layout --- */
-  rowWithPhoto: { display: "flex", alignItems: "center", gap: "12px" },
-  photo: { width: "48px", height: "48px", borderRadius: "50%", objectFit: "cover", backgroundColor: "#E8F5E9" },
-  rating: { fontSize: "12px", color: "#F39C12", margin: "4px 0 0", fontWeight: 500 },
-  /* ----------------------------------- */
+  rowWithPhoto: { display: "flex", gap: "10px", alignItems: "flex-start" },
+  photo: { width: "44px", height: "44px", borderRadius: "50%", objectFit: "cover" },
   rowName: { fontSize: "14px", color: "#3D5555", margin: 0, fontWeight: 600 },
   rowMeta: { fontSize: "12px", color: "#8FA3A3", margin: "2px 0 0" },
   rowPhone: { fontSize: "12px", color: "#0F5C5C", margin: "2px 0 0" },
+  rating: { fontSize: "12px", color: "#8A6D3B", margin: "2px 0 0" },
   rowActions: { display: "flex", alignItems: "center", gap: "8px" },
   verifiedBadge: {
     background: "#E8F5E9", color: "#2E8B57", fontSize: "11px",

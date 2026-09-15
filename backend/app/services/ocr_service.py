@@ -13,6 +13,10 @@ def extract_value(text, patterns, default=None):
                 pass
     return default
 
+def extract_full_text(pdf_bytes: bytes) -> str:
+    with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
+        full_text = "\n".join(page.extract_text() or "" for page in pdf.pages)
+    return full_text.strip()
 
 def extract_patient_info(pdf_bytes: bytes) -> dict:
     with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
