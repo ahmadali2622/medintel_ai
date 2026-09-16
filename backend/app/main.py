@@ -27,7 +27,7 @@ app = FastAPI()
 # --- Add CORS middleware ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173","http://192.168.1.165:5173"],  # Allow origin
+    allow_origins=["http://localhost:5173","https://medintel-ai-black.vercel.app/"],  # Allow origin
     allow_credentials=True,
     allow_methods=["*"],  # Allow all methods
     allow_headers=["*"],  # Allow all headers
