@@ -63,7 +63,6 @@ export default function Login() {
                 <option value="patient">Patient</option>
                 <option value="doctor">Doctor</option>
                 <option value="lab">Laboratory</option>
-                <option value="admin">Admin</option>
               </select>
             </>
           )}
