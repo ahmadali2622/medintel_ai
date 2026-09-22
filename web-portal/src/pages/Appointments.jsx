@@ -63,7 +63,11 @@ export default function Appointments() {
     e.preventDefault();
     setSaving(true);
     try {
-      await api.post("/reminders/create", form);
+      const payload = {
+        ...form,
+        remind_at: new Date(form.remind_at).toISOString(),
+      };
+      await api.post("/reminders/create", payload);
       setForm({ type: "medicine", message: "", remind_at: "" });
       setShowForm(false);
       loadData();
